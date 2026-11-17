@@ -1,8 +1,11 @@
+import { YouTubeBgmPlayer } from "./YouTubeBgmPlayer";
+
+const MARK_SIX_BGM_YOUTUBE_ID = "3oA9HL20tDo";
+
 /**
- * 100% procedural Web Audio API sound engine for the Halogen III broadcast simulator.
- * Synthesizes crisp filtered-noise + modal acrylic ball clacks in stereo,
- * organic paddle-turbulence airflow whir, pneumatic solenoid lift actuation,
- * and warm broadcast studio chimes without external audio assets.
+ * Broadcast sound engine for the Halogen III simulator.
+ * Drives hidden YouTube IFrame BGM (Shocking Blue - Inkpot, videoId lAwiWIBOz24) with
+ * automatic fallback to procedural Web Audio groove + stereo polymer clacks and chimes.
  */
 export class BroadcastAudioEngine {
   private ctx: AudioContext | null = null;
@@ -12,7 +15,14 @@ export class BroadcastAudioEngine {
   private bgmTimer: number | null = null;
   private bgmNextNoteTime = 0;
   private bgmStep = 0;
+  private readonly ytBgm: YouTubeBgmPlayer;
   enabled = true;
+
+  constructor() {
+    this.ytBgm = new YouTubeBgmPlayer(MARK_SIX_BGM_YOUTUBE_ID, () => {
+      this.startFallbackSynthBgm();
+    });
+  }
 
   unlock(): void {
     if (!this.enabled) return;
@@ -56,12 +66,19 @@ export class BroadcastAudioEngine {
   }
 
   private startBgm(): void {
-    if (!this.enabled || !this.ctx || !this.bgmGain || this.bgmTimer !== null) return;
-    if (this.bgmGain) {
-      this.bgmGain.gain.setTargetAtTime(0.24, this.ctx.currentTime, 0.06);
+    if (!this.enabled) return;
+    if (this.ytBgm.isUnavailable) {
+      this.startFallbackSynthBgm();
+      return;
     }
+    this.stopFallbackSynthBgm();
+    this.ytBgm.play();
+  }
+
+  private startFallbackSynthBgm(): void {
+    if (!this.enabled || !this.ctx || !this.bgmGain || this.bgmTimer !== null) return;
+    this.bgmGain.gain.setTargetAtTime(0.24, this.ctx.currentTime, 0.06);
     this.bgmNextNoteTime = this.ctx.currentTime + 0.04;
-    // 116 BPM 16th-note scheduler lookahead for original 70s broadcast funk-organ groove
     const stepDuration = 60 / 116 / 4;
     this.bgmTimer = window.setInterval(() => {
       if (!this.ctx || !this.enabled || this.ctx.state !== "running") return;
@@ -73,7 +90,7 @@ export class BroadcastAudioEngine {
     }, 35);
   }
 
-  private stopBgm(): void {
+  private stopFallbackSynthBgm(): void {
     if (this.bgmTimer !== null) {
       window.clearInterval(this.bgmTimer);
       this.bgmTimer = null;
@@ -83,8 +100,18 @@ export class BroadcastAudioEngine {
     }
   }
 
+  private stopBgm(): void {
+    this.ytBgm.pause();
+    this.stopFallbackSynthBgm();
+  }
+
   private duckBgm(durationSec = 0.65): void {
-    if (!this.bgmGain || !this.ctx || !this.enabled) return;
+    if (!this.enabled) return;
+    if (this.ytBgm.isAvailableAndReady) {
+      this.ytBgm.duck(durationSec);
+      return;
+    }
+    if (!this.bgmGain || !this.ctx) return;
     const now = this.ctx.currentTime;
     this.bgmGain.gain.cancelScheduledValues(now);
     this.bgmGain.gain.setTargetAtTime(0.11, now, 0.04);
