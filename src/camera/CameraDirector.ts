@@ -20,39 +20,71 @@ const PRESETS: Record<CameraPresetId, CameraPreset> = {
   main: {
     label: "正面全景",
     chipText: "CAM 1 · 正面全景",
-    position: new THREE.Vector3(0, 3.55, 11.2),
-    target: new THREE.Vector3(0, 3.00, 0),
+    position: new THREE.Vector3(0, 3.50, 10.6),
+    target: new THREE.Vector3(0, 3.05, 0),
     fov: 39,
   },
   topVortex: {
     label: "機頂俯瞰",
     chipText: "CAM 2 · 機頂俯瞰",
-    position: new THREE.Vector3(0.45, 7.55, 5.05),
-    target: new THREE.Vector3(0, 3.22, 0),
-    fov: 42,
+    // Gentle elevated 3/4 view into bowl & center well (~22° pitch) to avoid steep overhead plunge
+    position: new THREE.Vector3(0.20, 5.75, 6.25),
+    target: new THREE.Vector3(0, 3.15, 0),
+    fov: 38,
   },
   liftClose: {
     label: "中央導管特寫",
     chipText: "CAM 3 · 中央導管特寫",
-    position: new THREE.Vector3(0.48, 2.55, 3.15),
-    target: new THREE.Vector3(0, 2.40, 0),
-    fov: 34,
+    // Comfortable medium close-up with mild zoom delta from topVortex/track shots
+    position: new THREE.Vector3(0.22, 2.95, 4.65),
+    target: new THREE.Vector3(0, 2.80, 0),
+    fov: 36,
   },
   leftTrack: {
     label: "左邊軌道",
     chipText: "CAM 4 · 左邊軌道",
-    position: new THREE.Vector3(-2.55, 3.00, 2.75),
-    target: new THREE.Vector3(-1.42, 2.95, 0.16),
-    fov: 34,
+    // Soft frontal-left truck (~18°) matching liftClose distance for calm horizontal glide
+    position: new THREE.Vector3(-1.45, 3.15, 4.75),
+    target: new THREE.Vector3(-1.15, 3.05, 0.12),
+    fov: 36,
   },
   rightTrack: {
     label: "右邊軌道",
     chipText: "CAM 5 · 右邊軌道",
-    position: new THREE.Vector3(2.35, 2.55, 2.55),
-    target: new THREE.Vector3(1.40, 2.40, 0.16),
-    fov: 31,
+    position: new THREE.Vector3(1.40, 2.85, 4.55),
+    target: new THREE.Vector3(1.10, 2.75, 0.12),
+    fov: 35,
   },
 };
+
+/** Critically damped 3D spring step so camera cuts ease smoothly into motion without first-frame snap. */
+function dampVector3(
+  current: THREE.Vector3,
+  target: THREE.Vector3,
+  velocity: THREE.Vector3,
+  smoothTime: number,
+  dt: number,
+): void {
+  const omega = 2 / Math.max(0.05, smoothTime);
+  const x = omega * dt;
+  const exp = 1 / (1 + x + 0.48 * x * x + 0.235 * x * x * x);
+
+  const dx = current.x - target.x;
+  const dy = current.y - target.y;
+  const dz = current.z - target.z;
+
+  const tx = (velocity.x + omega * dx) * dt;
+  const ty = (velocity.y + omega * dy) * dt;
+  const tz = (velocity.z + omega * dz) * dt;
+
+  velocity.x = (velocity.x - omega * tx) * exp;
+  velocity.y = (velocity.y - omega * ty) * exp;
+  velocity.z = (velocity.z - omega * tz) * exp;
+
+  current.x = target.x + (dx + tx) * exp;
+  current.y = target.y + (dy + ty) * exp;
+  current.z = target.z + (dz + tz) * exp;
+}
 
 export class CameraDirector {
   readonly controls: OrbitControls;
@@ -62,7 +94,10 @@ export class CameraDirector {
   private readonly camera: THREE.PerspectiveCamera;
   private readonly desiredPos = PRESETS.main.position.clone();
   private readonly desiredTarget = PRESETS.main.target.clone();
+  private readonly posVelocity = new THREE.Vector3();
+  private readonly targetVelocity = new THREE.Vector3();
   private desiredFov = PRESETS.main.fov;
+  private activeSmoothTime = 0.45;
   private userOrbiting = false;
   private liftFollowY: number | null = null;
   private onPresetChange?: (preset: CameraPresetId, chipText: string) => void;
@@ -97,6 +132,8 @@ export class CameraDirector {
     this.desiredPos.copy(preset.position);
     this.desiredTarget.copy(preset.target);
     this.desiredFov = preset.fov;
+    this.posVelocity.set(0, 0, 0);
+    this.targetVelocity.set(0, 0, 0);
 
     this.camera.position.copy(preset.position);
     this.camera.fov = preset.fov;
@@ -117,6 +154,8 @@ export class CameraDirector {
     this.desiredPos.copy(preset.position);
     this.desiredTarget.copy(preset.target);
     this.desiredFov = preset.fov;
+    // Calmer dolly glide on auto-director cuts; crisper response on manual clicks
+    this.activeSmoothTime = fromAutoDirector ? 0.62 : 0.30;
     if (presetId !== "liftClose") {
       this.liftFollowY = null;
     }
@@ -137,16 +176,29 @@ export class CameraDirector {
   update(dt: number): void {
     if (!this.userOrbiting) {
       if (this.activePreset === "liftClose" && this.liftFollowY !== null) {
-        this.desiredPos.y = Math.max(2.35, Math.min(5.1, this.liftFollowY + 0.1));
-        this.desiredTarget.y = this.liftFollowY;
+        const clampedLift = Math.max(2.35, Math.min(4.75, this.liftFollowY));
+        this.desiredPos.y = 2.65 + (clampedLift - 2.35) * 0.72;
+        this.desiredTarget.y = 2.45 + (clampedLift - 2.35) * 0.85;
       }
 
-      const blend = 1 - Math.exp(-dt * 4.2);
-      this.camera.position.lerp(this.desiredPos, blend);
-      this.controls.target.lerp(this.desiredTarget, blend);
+      dampVector3(
+        this.camera.position,
+        this.desiredPos,
+        this.posVelocity,
+        this.activeSmoothTime,
+        dt,
+      );
+      dampVector3(
+        this.controls.target,
+        this.desiredTarget,
+        this.targetVelocity,
+        this.activeSmoothTime,
+        dt,
+      );
 
-      if (Math.abs(this.camera.fov - this.desiredFov) > 0.05) {
-        this.camera.fov += (this.desiredFov - this.camera.fov) * blend;
+      if (Math.abs(this.camera.fov - this.desiredFov) > 0.04) {
+        const fovBlend = 1 - Math.exp(-dt * (2 / this.activeSmoothTime));
+        this.camera.fov += (this.desiredFov - this.camera.fov) * fovBlend;
         this.camera.updateProjectionMatrix();
       }
     }

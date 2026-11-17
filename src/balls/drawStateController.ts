@@ -90,7 +90,7 @@ export class DrawStateController {
     this.elapsedInPhase = 0;
     this.drawTimer = 0;
     this.callbacks.onPhaseChange?.("正在攪拌號碼球 · 準備攪出號碼...");
-    this.callbacks.onCameraCue?.("main");
+    this.callbacks.onCameraCue?.("topVortex");
   }
 
   getActiveOmega(): number {
@@ -154,18 +154,18 @@ export class DrawStateController {
     if (this.trackShowcaseTimer > 0) {
       this.trackShowcaseTimer -= dt;
       if (this.trackShowcaseTimer <= 0 && this.drawnBalls.length > 0) {
-        this.callbacks.onCameraCue?.("main");
+        this.callbacks.onCameraCue?.("topVortex");
         this.callbacks.onPhaseChange?.("49 粒號碼球正在攪拌...");
       }
     }
 
     const waitDuration = this.fastMode
       ? this.drawnBalls.length === 0
-        ? 1.05
-        : 1.15
+        ? 1.4
+        : 1.95
       : this.drawnBalls.length === 0
-        ? 2.8
-        : 3.3;
+        ? 3.6
+        : 4.9;
     if (this.drawTimer >= waitDuration) {
       if (!this.captureWindowOpen) {
         this.captureWindowOpen = true;
@@ -353,7 +353,7 @@ export class DrawStateController {
       this.elapsedInPhase = 0;
       this.drawTimer = 0;
       this.windowOpenTime = 0;
-      this.trackShowcaseTimer = this.fastMode ? 0.55 : 1.45;
+      this.trackShowcaseTimer = this.fastMode ? 0.85 : 2.05;
       this.captureWindowOpen = false;
     } else {
       this.phase = "finished";
