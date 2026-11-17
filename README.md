@@ -16,7 +16,7 @@
   - 支援自選 6 個號碼或一鍵「機選一注」，完成攪珠後前 6 個正碼自動由小到大排列，並於選號列與結果列同步亮起命中號碼。
   - **四至七獎**：彩色紙碎慶祝與和弦音效；**二／三獎**：雙側彩炮連發與進階祝捷音效；**頭獎（6 碼全中）**：專屬金色星雨多波彩炮、全畫面金光氛圍光暈、頭獎閃耀橫幅與加長交響鐘聲。
 - **快抽模式與開獎紀錄**：可切換標準電視節奏／快速攪珠模式，右側邊欄自動保留最近 10 局開獎紀錄（存於瀏覽器 `localStorage`）。
-- **純 Web Audio 廣播音效**：即時合成馬達運轉聲、球體碰撞清脆聲、升球氣動聲及開獎／中獎鐘聲（預設開啟，可隨時靜音）。
+- **廣播音效與背景音樂**：整合隱藏式 YouTube IFrame 背景音樂播放器（[Shocking Blue - Inkpot](https://www.youtube.com/watch?v=lAwiWIBOz24)），配合 Web Audio 即時合成球體碰撞聲、升球氣動聲及開獎／中獎鐘聲（若瀏覽器封鎖或離線，會自動切換為內置 Web Audio 合成背景音樂，並可隨時一鍵靜音）。
 
 ---
 
@@ -106,3 +106,15 @@ npm run bake-gi
    - 推送至 `main` 後，**Actions** 分頁會自動執行 `Deploy to GitHub Pages`（執行 `npm ci` 與 `npm run build` 並發佈 `dist/`）。
    - 若儲存庫為私人（Private）且帳號非 Pro/Enterprise，請先於 **Settings → General → Danger Zone** 將儲存庫設為 **Public**，方可使用免費公開 GitHub Pages。
    - 部署完成後即可透過頁面顯示的 `https://<你的GitHub用戶名>.github.io/<你的Repo名稱>/` 網址公開瀏覽。
+
+---
+
+## 免責聲明與版權說明（Disclaimer）
+
+> **僅供學術及技術研究用途（For Academic & Educational Research Only）**
+
+- 本專案純屬個人針對 **WebGL / Three.js 3D 渲染、Rapier3D 剛體物理模擬及離線烘焙全域光照（Baked GI）** 之學術與技術研究作品。
+- 本專案**並非**香港賽馬會（HKJC）或 Smartplay International 之官方應用程式，與上述機構亦無任何關聯、合作或授權關係；本模擬器完全不涉及任何真實金錢交易、投注功能或商業營利用途。
+- 畫面中背景音樂透過 YouTube 官方 IFrame 公開嵌入播放（`lAwiWIBOz24`），所有介面與 3D 機台幾何均以程式碼自行重建作研究示範。
+- **如任何權利人或相關單位認為本專案或其中任何內容／音訊嵌入有版權、商標或其他疑慮，歡迎隨時透過 [GitHub Issues](https://github.com/edmondyip/mark-six/issues) 與本人聯繫，本人於接獲通知後將立即配合修改或移除。**
+
