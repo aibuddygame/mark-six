@@ -1,0 +1,189 @@
+{
+  "atlasSize": 1024,
+  "neutralUv": [
+    0.002,
+    0.002
+  ],
+  "charts": {
+    "static:studio_floor": {
+      "vertexCount": 436,
+      "rect": [
+        0.01806640625,
+        0.00244140625,
+        0.47021484375,
+        0.45458984375
+      ],
+      "unpackMode": "cylinder"
+    },
+    "static:stage_rings_all": {
+      "vertexCount": 1314,
+      "rect": [
+        0.00244140625,
+        0.79150390625,
+        0.04052734375,
+        0.81005859375
+      ],
+      "unpackMode": "single"
+    },
+    "static:podium_disc": {
+      "vertexCount": 340,
+      "rect": [
+        0.42822265625,
+        0.60791015625,
+        0.52099609375,
+        0.70068359375
+      ],
+      "unpackMode": "cylinder"
+    },
+    "static:backdrop_wall": {
+      "vertexCount": 146,
+      "rect": [
+        0.00244140625,
+        0.45751953125,
+        0.99365234375,
+        0.60498046875
+      ],
+      "unpackMode": "single"
+    },
+    "static:signs_all": {
+      "vertexCount": 433200,
+      "rect": [
+        0.19189453125,
+        0.60791015625,
+        0.42529296875,
+        0.71630859375
+      ],
+      "unpackMode": "cylinder"
+    },
+    "static:ceiling_light_rail": {
+      "vertexCount": 803,
+      "rect": [
+        0.75634765625,
+        0.73486328125,
+        0.80224609375,
+        0.78076171875
+      ],
+      "unpackMode": "single"
+    },
+    "static:ceiling_cans_all": {
+      "vertexCount": 1056,
+      "rect": [
+        0.81103515625,
+        0.60791015625,
+        0.88818359375,
+        0.66552734375
+      ],
+      "unpackMode": "single"
+    },
+    "static:tier_black_all": {
+      "vertexCount": 1536,
+      "rect": [
+        0.00244140625,
+        0.73486328125,
+        0.37646484375,
+        0.78857421875
+      ],
+      "unpackMode": "cylinder"
+    },
+    "static:tier_white_all": {
+      "vertexCount": 1536,
+      "rect": [
+        0.37939453125,
+        0.73486328125,
+        0.75341796875,
+        0.78857421875
+      ],
+      "unpackMode": "cylinder"
+    },
+    "static:conical_base": {
+      "vertexCount": 456,
+      "rect": [
+        0.47314453125,
+        0.00244140625,
+        0.69091796875,
+        0.22021484375
+      ],
+      "unpackMode": "single"
+    },
+    "static:base_chrome_ring": {
+      "vertexCount": 741,
+      "rect": [
+        0.80517578125,
+        0.73486328125,
+        0.85107421875,
+        0.78076171875
+      ],
+      "unpackMode": "single"
+    },
+    "static:neck_shadow_collar": {
+      "vertexCount": 292,
+      "rect": [
+        0.85400390625,
+        0.73486328125,
+        0.89990234375,
+        0.78076171875
+      ],
+      "unpackMode": "cylinder"
+    },
+    "static:platter_lower_rim": {
+      "vertexCount": 388,
+      "rect": [
+        0.52392578125,
+        0.60791015625,
+        0.61669921875,
+        0.70068359375
+      ],
+      "unpackMode": "cylinder"
+    },
+    "static:platter_top_deck": {
+      "vertexCount": 388,
+      "rect": [
+        0.61962890625,
+        0.60791015625,
+        0.71240234375,
+        0.70068359375
+      ],
+      "unpackMode": "cylinder"
+    },
+    "static:platter_inner_bevel": {
+      "vertexCount": 399,
+      "rect": [
+        0.71533203125,
+        0.60791015625,
+        0.80810546875,
+        0.70068359375
+      ],
+      "unpackMode": "cylinder"
+    },
+    "static:white_arch_all": {
+      "vertexCount": 6965,
+      "rect": [
+        0.00244140625,
+        0.60791015625,
+        0.18896484375,
+        0.73193359375
+      ],
+      "unpackMode": "cylinder"
+    },
+    "static:pocket_funnel": {
+      "vertexCount": 66,
+      "rect": [
+        0.90283203125,
+        0.73486328125,
+        0.94873046875,
+        0.78076171875
+      ],
+      "unpackMode": "single"
+    },
+    "static:pocket_rim": {
+      "vertexCount": 481,
+      "rect": [
+        0.95166015625,
+        0.73486328125,
+        0.99755859375,
+        0.78076171875
+      ],
+      "unpackMode": "single"
+    }
+  }
+}

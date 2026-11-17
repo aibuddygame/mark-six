@@ -1,0 +1,28 @@
+{
+  "name": "mark-six-halogen-iii",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "bake-gi": "tsx scripts/bakeStaticGI.ts"
+  },
+  "dependencies": {
+    "@dimforge/rapier3d-compat": "^0.21.0",
+    "@threert/gameplay": "^0.1.1",
+    "@threert/scene": "^0.1.1",
+    "three": "^0.187.0"
+  },
+  "devDependencies": {
+    "@fontsource/chocolate-classical-sans": "^5.3.1",
+    "@types/three": "^0.187.0",
+    "opentype.js": "^2.0.0",
+    "three-mesh-bvh": "^0.9.18",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3",
+    "vite": "^6.0.0"
+  }
+}
