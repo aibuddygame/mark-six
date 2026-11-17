@@ -2,6 +2,8 @@
 
 以 WebGL / Three.js 與 Rapier3D 剛體物理引擎打造的香港六合彩 **Smartplay Halogen III** 3D 攪珠機互動模擬器。全程純程式生成模型、號碼球貼圖、全域光照烘培及廣播音效，無需外部 3D 模型或音訊素材即可於瀏覽器流暢運行。
 
+![香港六合彩 Mark Six Smartplay Halogen III 3D 攪珠模擬器實機截圖](./docs/preview.png)
+
 ---
 
 ## 主要功能
@@ -53,6 +55,8 @@ npm run bake-gi
 ```text
 ├── .github/workflows/
 │   └── deploy-pages.yml          # GitHub Pages 自動建置及部署工作流程
+├── docs/
+│   └── preview.png               # README 預覽截圖
 ├── public/gi/                    # 離線烘焙之靜態 AO / Lightmap / UV 配置檔
 ├── scripts/
 │   └── bakeStaticGI.ts           # three-mesh-bvh 全域光照離線烘焙腳本
