@@ -10,6 +10,22 @@
     <div id="jackpot-aura" class="jackpot-aura hidden" aria-hidden="true"></div>
     <canvas id="win-fx-canvas" class="win-fx-canvas" aria-hidden="true"></canvas>
 
+    <div id="mobile-loading-screen" class="mobile-loading-screen" aria-live="polite" aria-label="載入中">
+      <div class="mobile-loading-card">
+        <div class="mobile-loading-balls" aria-hidden="true">
+          <span class="loader-ball ball-red">01</span>
+          <span class="loader-ball ball-blue">09</span>
+          <span class="loader-ball ball-green">28</span>
+        </div>
+        <div class="mobile-loading-title">香港六合彩 · HALOGEN III</div>
+        <div id="mobile-loading-text" class="mobile-loading-text">正在準備模擬器...</div>
+        <div class="mobile-loading-bar-track">
+          <div id="mobile-loading-bar" class="mobile-loading-bar-fill"></div>
+        </div>
+        <div id="mobile-loading-pct" class="mobile-loading-pct">0%</div>
+      </div>
+    </div>
+
     <div id="broadcast-hud">
       <!-- Top Minimal Header -->
       <header id="tv-header">
@@ -42,15 +58,15 @@
       </div>
 
       <!-- Right-Side Vertical Draw History Column -->
-      <aside id="history-rail" class="history-rail" aria-label="近期攪珠紀錄">
+      <aside id="history-rail" class="history-rail" aria-label="近期開彩記錄">
         <div class="history-rail-header">
           <div class="popover-title-wrap">
-            <span class="popover-title">開獎紀錄</span>
+            <span class="popover-title">開彩記錄</span>
             <span id="history-count-badge" class="popover-badge">0 局</span>
           </div>
           <div class="popover-actions">
             <button id="btn-clear-history" class="mini-btn" type="button">清除</button>
-            <button id="btn-toggle-history" class="mini-btn mini-btn-close" type="button" aria-label="收起或展開開獎紀錄">−</button>
+            <button id="btn-toggle-history" class="mini-btn mini-btn-close" type="button" aria-label="收起或展開開彩記錄">−</button>
           </div>
         </div>
         <div id="history-list" class="history-list">
@@ -171,6 +187,17 @@
             <span class="toggle-text">音效</span>
             <span class="toggle-pill" id="audio-state">開</span>
           </button>
+          <button id="btn-mobile-ticket" class="btn btn-secondary mobile-only-btn" type="button" aria-expanded="false">
+            <span>選號</span>
+            <span class="toggle-pill" id="mobile-ticket-badge">0/6</span>
+          </button>
+          <button id="btn-mobile-history" class="btn btn-secondary mobile-only-btn" type="button" aria-expanded="false">
+            <span>記錄</span>
+            <span class="toggle-pill" id="mobile-history-badge">0</span>
+          </button>
+          <button id="btn-mobile-drawer" class="btn btn-secondary mobile-only-btn" type="button" aria-expanded="false">
+            <span>控制</span>
+          </button>
         </div>
 
         <div class="dock-group dock-cameras" role="tablist" aria-label="攝影機視角">
@@ -189,6 +216,16 @@
           <button class="btn-cam" data-cam="rightTrack" type="button">
             右邊軌道
           </button>
+        </div>
+
+        <div class="mobile-drawer-header">
+          <span class="popover-title">控制與攝影機視角</span>
+          <div class="mobile-drawer-meta">
+            <a href="https://github.com/edmondyip/mark-six" target="_blank" rel="noopener noreferrer">GitHub</a>
+            <span aria-hidden="true">·</span>
+            <a href="https://github.com/edmondyip/mark-six/issues" target="_blank" rel="noopener noreferrer">免責聲明</a>
+            <button id="btn-close-mobile-drawer" class="mini-btn mini-btn-close" type="button" aria-label="關閉控制面板">✕</button>
+          </div>
         </div>
       </footer>
 
