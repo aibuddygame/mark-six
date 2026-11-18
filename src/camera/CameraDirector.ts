@@ -136,7 +136,7 @@ export class CameraDirector {
     this.targetVelocity.set(0, 0, 0);
 
     this.camera.position.copy(preset.position);
-    this.camera.fov = preset.fov;
+    this.camera.fov = this.getEffectiveFov(preset.fov);
     this.camera.updateProjectionMatrix();
     this.controls.target.copy(preset.target);
     this.controls.update();
@@ -196,13 +196,22 @@ export class CameraDirector {
         dt,
       );
 
-      if (Math.abs(this.camera.fov - this.desiredFov) > 0.04) {
+      const targetFov = this.getEffectiveFov(this.desiredFov);
+      if (Math.abs(this.camera.fov - targetFov) > 0.04) {
         const fovBlend = 1 - Math.exp(-dt * (2 / this.activeSmoothTime));
-        this.camera.fov += (this.desiredFov - this.camera.fov) * fovBlend;
+        this.camera.fov += (targetFov - this.camera.fov) * fovBlend;
         this.camera.updateProjectionMatrix();
       }
     }
 
     this.controls.update();
+  }
+
+  private getEffectiveFov(baseFov: number): number {
+    if (this.camera.aspect >= 1) return baseFov;
+    return Math.min(
+      62,
+      baseFov / Math.max(0.62, Math.min(1, this.camera.aspect * 1.12)),
+    );
   }
 }

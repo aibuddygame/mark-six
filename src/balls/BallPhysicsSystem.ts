@@ -54,6 +54,7 @@ export class BallPhysicsSystem {
   private readonly machine: MachineRig;
   private readonly callbacks: DrawAudioCallbacks;
   private readonly drawCtrl: DrawStateController;
+  private readonly isMobile: boolean;
 
   private readonly world: RAPIER.World;
   private readonly eventQueue: RAPIER.EventQueue;
@@ -85,16 +86,21 @@ export class BallPhysicsSystem {
     this.drawCtrl.setFastMode(enabled);
   }
 
-  constructor(machine: MachineRig, callbacks: DrawAudioCallbacks) {
+  constructor(
+    machine: MachineRig,
+    callbacks: DrawAudioCallbacks,
+    isMobile = false,
+  ) {
     this.machine = machine;
     this.callbacks = callbacks;
+    this.isMobile = isMobile;
     this.group.name = "lotteryBalls49";
 
     this.drawCtrl = new DrawStateController(machine, callbacks);
 
     this.world = new RAPIER.World({ x: 0, y: -14.5, z: 0 });
-    this.world.timestep = FIXED_DT;
-    this.world.numSolverIterations = 8;
+    this.world.timestep = isMobile ? 1 / 60 : FIXED_DT;
+    this.world.numSolverIterations = isMobile ? 4 : 8;
     this.eventQueue = new RAPIER.EventQueue(true);
 
     const chamber = createChamberBodies(this.world);
@@ -103,19 +109,21 @@ export class BallPhysicsSystem {
 
     const ballAtlasMat = new MeshPhysicalMaterial({
       color: 0xffffff,
-      map: createBallAtlasTexture(getBallColorKind),
+      map: createBallAtlasTexture(getBallColorKind, isMobile),
       roughness: 0.14,
       metalness: 0.02,
       clearcoat: 0.92,
       clearcoatRoughness: 0.06,
     });
+    const widthSegs = isMobile ? 14 : 22;
+    const heightSegs = isMobile ? 10 : 16;
     for (let num = 1; num <= 49; num++) {
       const colorKind = getBallColorKind(num);
-      const ballGeo = new SphereGeometry(BALL_RADIUS, 22, 16);
-      remapBallAtlasUvs(ballGeo.uvs, num);
+      const ballGeo = new SphereGeometry(BALL_RADIUS, widthSegs, heightSegs);
+      remapBallAtlasUvs(ballGeo.uvs, num, isMobile);
       const mesh = new Mesh(ballGeo, ballAtlasMat);
       mesh.name = `ball_${num}`;
-      mesh.castShadow = true;
+      mesh.castShadow = !isMobile;
       this.group.add(mesh);
 
       const body = this.world.createRigidBody(
@@ -285,12 +293,16 @@ export class BallPhysicsSystem {
     const activeOmega = this.drawCtrl.getActiveOmega();
     const isFinishedCoasting = this.drawCtrl.phase === "finished";
     const rotorY = DRUM_CENTER_Y - DRUM_RADIUS + 0.13;
+    const stepDt = this.world.timestep;
 
-    this.physicsAccum = Math.min(this.physicsAccum + dt, FIXED_DT * 5);
+    this.physicsAccum = Math.min(
+      this.physicsAccum + dt,
+      stepDt * (this.isMobile ? 3 : 5),
+    );
 
-    while (this.physicsAccum >= FIXED_DT) {
-      this.physicsAccum -= FIXED_DT;
-      this.agitatorAngle += activeOmega * FIXED_DT;
+    while (this.physicsAccum >= stepDt) {
+      this.physicsAccum -= stepDt;
+      this.agitatorAngle += activeOmega * stepDt;
 
       const halfY = this.agitatorAngle * 0.5;
       this.agitatorBody.setNextKinematicTranslation({ x: 0, y: rotorY, z: 0 });

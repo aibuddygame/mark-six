@@ -267,7 +267,7 @@ function computeZeroGapStopUs(
   return stops;
 }
 
-export function createHalogenMachine(): MachineRig {
+export function createHalogenMachine(isMobile = false): MachineRig {
   const root = new Group();
   root.name = "halogenIII";
 
@@ -695,14 +695,26 @@ export function createHalogenMachine(): MachineRig {
     }
     return new CatmullRomCurve3(pts);
   };
+  const trackTubularSegs = isMobile ? 64 : 112;
+  const trackRadialSegs = isMobile ? 16 : 24;
   const leftTrackMesh = new Mesh(
-    createTubeMeshGeometry(buildVisibleTrackSubCurve(leftTrackCurve), 112, trackTubeRadius, 24),
+    createTubeMeshGeometry(
+      buildVisibleTrackSubCurve(leftTrackCurve),
+      trackTubularSegs,
+      trackTubeRadius,
+      trackRadialSegs,
+    ),
     trackGlassMat,
   );
   root.add(leftTrackMesh);
 
   const rightTrackMesh = new Mesh(
-    createTubeMeshGeometry(buildVisibleTrackSubCurve(rightTrackCurve), 112, trackTubeRadius, 24),
+    createTubeMeshGeometry(
+      buildVisibleTrackSubCurve(rightTrackCurve),
+      trackTubularSegs,
+      trackTubeRadius,
+      trackRadialSegs,
+    ),
     trackGlassMat,
   );
   root.add(rightTrackMesh);
@@ -916,19 +928,23 @@ export function createHalogenMachine(): MachineRig {
   // 8. Thick Molded Polycarbonate Spherical Mixing Drum (Pure PBR PMREM + Dual-Wall Fresnel)
   // (No fake sticker ovals; no horizontal metal equator hoop)
   // =========================================================================
-  const drumInnerMat = new MeshPhysicalMaterial({
-    color: 0xdbeafe,
-    roughness: 0.03,
-    opacity: 0.14,
-    transparent: true,
-  });
-  drumInnerMat.name = "drumInnerAcrylicWall";
-  const drumInnerSphere = new Mesh(
-    new SphereGeometry(DRUM_RADIUS - 0.038, 48, 36),
-    drumInnerMat,
-  );
-  drumInnerSphere.position.set(0, DRUM_CENTER_Y, 0);
-  root.add(drumInnerSphere);
+  const drumWidthSegs = isMobile ? 32 : 48;
+  const drumHeightSegs = isMobile ? 24 : 36;
+  if (!isMobile) {
+    const drumInnerMat = new MeshPhysicalMaterial({
+      color: 0xdbeafe,
+      roughness: 0.03,
+      opacity: 0.14,
+      transparent: true,
+    });
+    drumInnerMat.name = "drumInnerAcrylicWall";
+    const drumInnerSphere = new Mesh(
+      new SphereGeometry(DRUM_RADIUS - 0.038, drumWidthSegs, drumHeightSegs),
+      drumInnerMat,
+    );
+    drumInnerSphere.position.set(0, DRUM_CENTER_Y, 0);
+    root.add(drumInnerSphere);
+  }
 
   // Pure Fresnel-weighted glossy specular studio reflection shell (rendered via AdditiveBlending in ThreeEngine
   // with zero diffuse haze so PMREM softbox + clearcoat reflections shine at 100% strength)
@@ -945,7 +961,10 @@ export function createHalogenMachine(): MachineRig {
   });
   drumGlassMat.name = "drumOuterGlass";
 
-  const drumSphere = new Mesh(new SphereGeometry(DRUM_RADIUS, 48, 36), drumGlassMat);
+  const drumSphere = new Mesh(
+    new SphereGeometry(DRUM_RADIUS, drumWidthSegs, drumHeightSegs),
+    drumGlassMat,
+  );
   drumSphere.position.set(0, DRUM_CENTER_Y, 0);
   root.add(drumSphere);
 
@@ -957,7 +976,7 @@ export function createHalogenMachine(): MachineRig {
   });
   drumFresnelMat.name = "drumFresnelRim";
   const drumFresnelSphere = new Mesh(
-    new SphereGeometry(DRUM_RADIUS + 0.002, 48, 36),
+    new SphereGeometry(DRUM_RADIUS + 0.002, drumWidthSegs, drumHeightSegs),
     drumFresnelMat,
   );
   drumFresnelSphere.position.set(0, DRUM_CENTER_Y, 0);

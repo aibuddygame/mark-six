@@ -23,6 +23,7 @@ export interface MarkSixGameState {
 export function createMarkSixGame(
   callbacks: DrawAudioCallbacks,
   onReady?: (handles: SimRuntimeHandles) => void,
+  isMobile = false,
 ) {
   let handles: SimRuntimeHandles | null = null;
 
@@ -39,13 +40,13 @@ export function createMarkSixGame(
       camera.lookAt(0, 3.25, 0);
       camera.setManualExposure(0);
 
-      const studio = createStudio();
+      const studio = createStudio(isMobile);
       scene.add(studio.group);
 
-      const machine = createHalogenMachine();
+      const machine = createHalogenMachine(isMobile);
       scene.add(machine.root);
 
-      const physics = new BallPhysicsSystem(machine, callbacks);
+      const physics = new BallPhysicsSystem(machine, callbacks, isMobile);
       scene.add(physics.group);
 
       handles = { physics, machine };

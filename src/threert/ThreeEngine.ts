@@ -91,34 +91,40 @@ export class ThreeEngine implements Engine {
   private activeCamera: THREE.PerspectiveCamera;
   private studioEnvTexture: THREE.Texture;
   private readonly hemiLight: THREE.HemisphereLight;
+  private readonly isMobile: boolean;
   private externalCameraOverride = false;
   private staticGiLayout: StaticGiLayout | null = null;
   private bakedAoTexture: THREE.Texture | null = null;
   private bakedLightMapTexture: THREE.Texture | null = null;
 
-  constructor(container: HTMLElement) {
+  constructor(container: HTMLElement, options?: { isMobile?: boolean }) {
+    this.isMobile = Boolean(options?.isMobile);
     const width = container.clientWidth || window.innerWidth;
     const height = container.clientHeight || window.innerHeight;
 
     this.renderer = new THREE.WebGLRenderer({
-      antialias: true,
+      antialias: !this.isMobile,
       powerPreference: "high-performance",
       alpha: false,
     });
-    const dpr = Math.min(window.devicePixelRatio || 1, 1.25);
+    const dpr = Math.min(window.devicePixelRatio || 1, this.isMobile ? 1.0 : 1.25);
     this.renderer.setPixelRatio(dpr);
     this.renderer.setSize(width, height);
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.AgXToneMapping;
     this.renderer.toneMappingExposure = 1.00;
-    this.renderer.shadowMap.enabled = true;
+    this.renderer.shadowMap.enabled = !this.isMobile;
     this.renderer.shadowMap.type = THREE.PCFShadowMap;
     container.appendChild(this.renderer.domElement);
 
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x282b38);
 
-    this.hemiLight = new THREE.HemisphereLight(0xf1f5f9, 0x7b82ad, 0.42);
+    this.hemiLight = new THREE.HemisphereLight(
+      0xf1f5f9,
+      0x7b82ad,
+      this.isMobile ? 0.68 : 0.42,
+    );
     this.scene.add(this.hemiLight);
 
     try {
@@ -185,7 +191,7 @@ export class ThreeEngine implements Engine {
   resize(width: number, height: number): void {
     const w = Math.max(1, width);
     const h = Math.max(1, height);
-    const dpr = Math.min(window.devicePixelRatio || 1, 1.25);
+    const dpr = Math.min(window.devicePixelRatio || 1, this.isMobile ? 1.0 : 1.25);
     const aspect = w / h;
     this.defaultCamera.aspect = aspect;
     this.defaultCamera.updateProjectionMatrix();
@@ -288,7 +294,9 @@ export class ThreeEngine implements Engine {
     tex.generateMipmaps = true;
     tex.minFilter = THREE.LinearMipmapLinearFilter;
     tex.magFilter = THREE.LinearFilter;
-    tex.anisotropy = Math.min(8, this.renderer.capabilities.getMaxAnisotropy());
+    tex.anisotropy = this.isMobile
+      ? 1
+      : Math.min(8, this.renderer.capabilities.getMaxAnisotropy());
     tex.needsUpdate = true;
 
     this.textures.set(id, tex);

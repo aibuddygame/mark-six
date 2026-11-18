@@ -17,10 +17,8 @@ const TEX_H = 256;
 const GLYPH_SIZE = 256;
 const ATLAS_COLS = 8;
 const ATLAS_ROWS = 8;
-const ATLAS_W = TEX_W * ATLAS_COLS; // 4096
-const ATLAS_H = TEX_H * ATLAS_ROWS; // 2048
 
-let cachedSphereLut: BallSphereLutEntry[] | null = null;
+const cachedSphereLuts = new Map<string, BallSphereLutEntry[]>();
 let sharedGlyphCanvas: HTMLCanvasElement | null = null;
 let sharedOutCanvas: HTMLCanvasElement | null = null;
 
@@ -41,8 +39,14 @@ function getBallRgb(kind: BallColorKind): [number, number, number] {
  * dodecahedron pentagonal windows (matching official Mark Six ball tessellation)
  * with zero polar stretching and crisp colored webbing between panels.
  */
-function getBallSphereLut(): BallSphereLutEntry[] {
-  if (cachedSphereLut) return cachedSphereLut;
+function getBallSphereLut(
+  texW = TEX_W,
+  texH = TEX_H,
+  glyphSize = GLYPH_SIZE,
+): BallSphereLutEntry[] {
+  const key = `${texW}x${texH}x${glyphSize}`;
+  const cached = cachedSphereLuts.get(key);
+  if (cached) return cached;
 
   const phi = (1 + Math.sqrt(5)) / 2;
   const rawCenters: [number, number, number][] = [
@@ -92,13 +96,13 @@ function getBallSphereLut(): BallSphereLutEntry[] {
   const maxProj = 0.36;
   const entries: BallSphereLutEntry[] = [];
 
-  for (let py = 0; py < TEX_H; py++) {
-    const theta = ((py + 0.5) / TEX_H) * Math.PI;
+  for (let py = 0; py < texH; py++) {
+    const theta = ((py + 0.5) / texH) * Math.PI;
     const sinT = Math.sin(theta);
     const cosT = Math.cos(theta);
 
-    for (let px = 0; px < TEX_W; px++) {
-      const az = ((px + 0.5) / TEX_W) * Math.PI * 2;
+    for (let px = 0; px < texW; px++) {
+      const az = ((px + 0.5) / texW) * Math.PI * 2;
       const nx = -sinT * Math.cos(az);
       const ny = cosT;
       const nz = sinT * Math.sin(az);
@@ -133,15 +137,15 @@ function getBallSphereLut(): BallSphereLutEntry[] {
         const vCoord = nx * bestFace.dx + ny * bestFace.dy + nz * bestFace.dz;
         const normU = 0.5 + (uCoord / maxProj) * 0.44;
         const normV = 0.5 + (vCoord / maxProj) * 0.44;
-        const gx = Math.max(0, Math.min(GLYPH_SIZE - 1, normU * (GLYPH_SIZE - 1)));
-        const gy = Math.max(0, Math.min(GLYPH_SIZE - 1, normV * (GLYPH_SIZE - 1)));
+        const gx = Math.max(0, Math.min(glyphSize - 1, normU * (glyphSize - 1)));
+        const gy = Math.max(0, Math.min(glyphSize - 1, normV * (glyphSize - 1)));
         const x0 = Math.floor(gx);
         const y0 = Math.floor(gy);
-        const x1 = Math.min(GLYPH_SIZE - 1, x0 + 1);
-        const y1 = Math.min(GLYPH_SIZE - 1, y0 + 1);
+        const x1 = Math.min(glyphSize - 1, x0 + 1);
+        const y1 = Math.min(glyphSize - 1, y0 + 1);
 
         entries.push({
-          pixelOffset: (py * TEX_W + px) * 4,
+          pixelOffset: (py * texW + px) * 4,
           x0,
           y0,
           x1,
@@ -154,7 +158,7 @@ function getBallSphereLut(): BallSphereLutEntry[] {
     }
   }
 
-  cachedSphereLut = entries;
+  cachedSphereLuts.set(key, entries);
   return entries;
 }
 
@@ -163,10 +167,15 @@ function drawBallNumeralGlyph(
   gCtx: CanvasRenderingContext2D,
   num: number,
   _kind: BallColorKind,
+  glyphSize = GLYPH_SIZE,
 ): void {
   const label = String(num).padStart(2, "0");
   gCtx.fillStyle = "#ffffff";
-  gCtx.fillRect(0, 0, GLYPH_SIZE, GLYPH_SIZE);
+  gCtx.fillRect(0, 0, glyphSize, glyphSize);
+
+  const scale = glyphSize / GLYPH_SIZE;
+  gCtx.save();
+  gCtx.scale(scale, scale);
 
   const scaleX = 0.84;
   const strokeW = 5;
@@ -200,6 +209,7 @@ function drawBallNumeralGlyph(
   const barY = Math.round(cy + descent + strokeW * 0.5 + gap);
   gCtx.fillStyle = "#0b0f19";
   gCtx.fillRect(Math.round((GLYPH_SIZE - barW) / 2), barY, barW, barH);
+  gCtx.restore();
 }
 
 /** Synthesizes a 12-panel dodecahedral procedural ball DataTexture for the given ball number. */
@@ -271,41 +281,48 @@ export function createBallTexture(num: number, kind: BallColorKind) {
  */
 export function createBallAtlasTexture(
   getKind: (num: number) => BallColorKind,
+  isMobile = false,
 ) {
+  const texW = isMobile ? 256 : TEX_W;
+  const texH = isMobile ? 128 : TEX_H;
+  const glyphSize = isMobile ? 128 : GLYPH_SIZE;
+  const atlasW = texW * ATLAS_COLS;
+  const atlasH = texH * ATLAS_ROWS;
+
   if (!sharedGlyphCanvas) {
     sharedGlyphCanvas = document.createElement("canvas");
-    sharedGlyphCanvas.width = GLYPH_SIZE;
-    sharedGlyphCanvas.height = GLYPH_SIZE;
   }
+  sharedGlyphCanvas.width = glyphSize;
+  sharedGlyphCanvas.height = glyphSize;
   const gCtx = sharedGlyphCanvas.getContext("2d")!;
 
   const atlasCanvas = document.createElement("canvas");
-  atlasCanvas.width = ATLAS_W;
-  atlasCanvas.height = ATLAS_H;
+  atlasCanvas.width = atlasW;
+  atlasCanvas.height = atlasH;
   const atlasCtx = atlasCanvas.getContext("2d")!;
-  const atlasImg = atlasCtx.createImageData(ATLAS_W, ATLAS_H);
+  const atlasImg = atlasCtx.createImageData(atlasW, atlasH);
   const atlas = atlasImg.data;
-  const lut = getBallSphereLut();
+  const lut = getBallSphereLut(texW, texH, glyphSize);
 
   for (let num = 1; num <= 49; num++) {
     const kind = getKind(num);
-    drawBallNumeralGlyph(gCtx, num, kind);
-    const glyphData = gCtx.getImageData(0, 0, GLYPH_SIZE, GLYPH_SIZE).data;
+    drawBallNumeralGlyph(gCtx, num, kind, glyphSize);
+    const glyphData = gCtx.getImageData(0, 0, glyphSize, glyphSize).data;
 
     const cellCol = (num - 1) % ATLAS_COLS;
     const cellRow = Math.floor((num - 1) / ATLAS_COLS);
-    const baseX = cellCol * TEX_W;
-    const baseY = cellRow * TEX_H;
+    const baseX = cellCol * texW;
+    const baseY = cellRow * texH;
     const [br, bg, bb] = getBallRgb(kind);
 
-    for (let py = 0; py < TEX_H; py++) {
-      const bandDist = Math.abs(py - TEX_H * 0.5) / (TEX_H * 0.25);
+    for (let py = 0; py < texH; py++) {
+      const bandDist = Math.abs(py - texH * 0.5) / (texH * 0.25);
       const shade = bandDist < 1 ? 1 + (1 - bandDist) * 0.06 : 0.97;
       const r = Math.min(255, Math.round(br * shade));
       const g = Math.min(255, Math.round(bg * shade));
       const b = Math.min(255, Math.round(bb * shade));
-      let idx = ((baseY + py) * ATLAS_W + baseX) * 4;
-      for (let px = 0; px < TEX_W; px++) {
+      let idx = ((baseY + py) * atlasW + baseX) * 4;
+      for (let px = 0; px < texW; px++) {
         atlas[idx] = r;
         atlas[idx + 1] = g;
         atlas[idx + 2] = b;
@@ -317,17 +334,17 @@ export function createBallAtlasTexture(
     for (let i = 0; i < lut.length; i++) {
       const e = lut[i];
       const cellPx = Math.floor(e.pixelOffset / 4);
-      const lx = cellPx % TEX_W;
-      const ly = Math.floor(cellPx / TEX_W);
-      const aOff = ((baseY + ly) * ATLAS_W + (baseX + lx)) * 4;
+      const lx = cellPx % texW;
+      const ly = Math.floor(cellPx / texW);
+      const aOff = ((baseY + ly) * atlasW + (baseX + lx)) * 4;
       const w00 = (1 - e.fx) * (1 - e.fy);
       const w10 = e.fx * (1 - e.fy);
       const w01 = (1 - e.fx) * e.fy;
       const w11 = e.fx * e.fy;
-      const o00 = (e.y0 * GLYPH_SIZE + e.x0) * 4;
-      const o10 = (e.y0 * GLYPH_SIZE + e.x1) * 4;
-      const o01 = (e.y1 * GLYPH_SIZE + e.x0) * 4;
-      const o11 = (e.y1 * GLYPH_SIZE + e.x1) * 4;
+      const o00 = (e.y0 * glyphSize + e.x0) * 4;
+      const o10 = (e.y0 * glyphSize + e.x1) * 4;
+      const o01 = (e.y1 * glyphSize + e.x0) * 4;
+      const o11 = (e.y1 * glyphSize + e.x1) * 4;
       const gr = glyphData[o00] * w00 + glyphData[o10] * w10 + glyphData[o01] * w01 + glyphData[o11] * w11;
       const gg = glyphData[o00 + 1] * w00 + glyphData[o10 + 1] * w10 + glyphData[o01 + 1] * w01 + glyphData[o11 + 1] * w11;
       const gb = glyphData[o00 + 2] * w00 + glyphData[o10 + 2] * w10 + glyphData[o01 + 2] * w01 + glyphData[o11 + 2] * w11;
@@ -346,11 +363,17 @@ export function createBallAtlasTexture(
 }
 
 /** Remaps normalized [0..1]^2 sphere UVs into ball `num` (1..49)'s atlas cell with safe 1px inset. */
-export function remapBallAtlasUvs(uvs: Float32Array, num: number): void {
+export function remapBallAtlasUvs(
+  uvs: Float32Array,
+  num: number,
+  isMobile = false,
+): void {
+  const texW = isMobile ? 256 : TEX_W;
+  const texH = isMobile ? 128 : TEX_H;
   const col = (num - 1) % ATLAS_COLS;
   const row = Math.floor((num - 1) / ATLAS_COLS);
-  const padU = 1 / TEX_W;
-  const padV = 1 / TEX_H;
+  const padU = 1 / texW;
+  const padV = 1 / texH;
   const u0 = (col + padU) / ATLAS_COLS;
   const uSpan = (1 - padU * 2) / ATLAS_COLS;
   const v0 = (ATLAS_ROWS - 1 - row + padV) / ATLAS_ROWS;

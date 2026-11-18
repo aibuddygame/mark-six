@@ -73,6 +73,17 @@ export class BroadcastHUD {
   private readonly btnClearHistory = document.getElementById("btn-clear-history") as HTMLButtonElement;
   private readonly btnToggleHistory = document.getElementById("btn-toggle-history") as HTMLButtonElement;
 
+  // Mobile-only collapsible dock controls
+  private readonly isMobile: boolean;
+  private readonly bottomDock = document.getElementById("bottom-dock")!;
+  private readonly btnMobileTicket = document.getElementById("btn-mobile-ticket") as HTMLButtonElement | null;
+  private readonly btnMobileHistory = document.getElementById("btn-mobile-history") as HTMLButtonElement | null;
+  private readonly btnMobileDrawer = document.getElementById("btn-mobile-drawer") as HTMLButtonElement | null;
+  private readonly btnCloseMobileDrawer = document.getElementById("btn-close-mobile-drawer") as HTMLButtonElement | null;
+  private readonly mobileTicketBadge = document.getElementById("mobile-ticket-badge");
+  private readonly mobileHistoryBadge = document.getElementById("mobile-history-badge");
+  private readonly canvasContainer = document.getElementById("canvas-container");
+
   private readonly camButtons = Array.from(
     document.querySelectorAll<HTMLButtonElement>(".btn-cam"),
   );
@@ -94,12 +105,27 @@ export class BroadcastHUD {
   private clockTimer: number | null = null;
   private winBannerTimer: number | null = null;
 
-  constructor(callbacks: HUDCallbacks) {
+  private readonly onCanvasPointerDown = (): void => {
+    if (this.isMobile) {
+      this.closeAllMobilePanels();
+    }
+  };
+
+  constructor(
+    callbacks: HUDCallbacks,
+    isMobile = document.body.classList.contains("is-mobile"),
+  ) {
     this.callbacks = callbacks;
+    this.isMobile = isMobile;
     const fxCanvas = document.getElementById("win-fx-canvas") as HTMLCanvasElement | null;
     this.winFx = fxCanvas ? new WinCelebrationFx(fxCanvas) : null;
 
-    this.btnStart.addEventListener("click", () => callbacks.onStartDraw());
+    this.btnStart.addEventListener("click", () => {
+      if (this.isMobile) {
+        this.closeAllMobilePanels();
+      }
+      callbacks.onStartDraw();
+    });
     this.btnReset.addEventListener("click", () => callbacks.onResetDraw());
     this.btnCloseWinBanner.addEventListener("click", () => this.clearWinCelebration());
 
@@ -162,15 +188,44 @@ export class BroadcastHUD {
     });
 
     this.btnToggleHistory.addEventListener("click", () => {
+      if (this.isMobile) {
+        this.setMobileHistoryOpen(false);
+        return;
+      }
       this.historyCollapsed = !this.historyCollapsed;
       this.historyRail.classList.toggle("collapsed", this.historyCollapsed);
       this.btnToggleHistory.textContent = this.historyCollapsed ? "+" : "−";
     });
 
+    if (this.isMobile) {
+      this.btnToggleHistory.textContent = "✕";
+      this.btnMobileTicket?.addEventListener("click", () => {
+        const isOpen = !this.ticketPanel.classList.contains("hidden");
+        this.setTicketPanelOpen(!isOpen);
+      });
+      this.btnMobileHistory?.addEventListener("click", () => {
+        const isOpen = this.historyRail.classList.contains("mobile-open");
+        this.setMobileHistoryOpen(!isOpen);
+      });
+      this.btnMobileDrawer?.addEventListener("click", () => {
+        const isOpen = this.bottomDock.classList.contains("mobile-drawer-open");
+        this.setMobileDrawerOpen(!isOpen);
+      });
+      this.btnCloseMobileDrawer?.addEventListener("click", () => {
+        this.setMobileDrawerOpen(false);
+      });
+      this.canvasContainer?.addEventListener("pointerdown", this.onCanvasPointerDown);
+    }
+
     for (const btn of this.camButtons) {
       btn.addEventListener("click", () => {
         const cam = btn.dataset.cam as CameraPresetId | undefined;
-        if (cam) callbacks.onSelectCamera(cam);
+        if (cam) {
+          callbacks.onSelectCamera(cam);
+          if (this.isMobile) {
+            this.closeAllMobilePanels();
+          }
+        }
       });
     }
 
@@ -276,11 +331,46 @@ export class BroadcastHUD {
     if (this.winBannerTimer !== null) {
       window.clearTimeout(this.winBannerTimer);
     }
+    this.canvasContainer?.removeEventListener("pointerdown", this.onCanvasPointerDown);
     this.winFx?.dispose();
   }
 
   private setTicketPanelOpen(open: boolean): void {
     this.ticketPanel.classList.toggle("hidden", !open);
+    if (this.isMobile) {
+      this.btnMobileTicket?.classList.toggle("active", open);
+      this.btnMobileTicket?.setAttribute("aria-expanded", String(open));
+      if (open) {
+        this.setMobileHistoryOpen(false);
+        this.setMobileDrawerOpen(false);
+      }
+    }
+  }
+
+  private setMobileHistoryOpen(open: boolean): void {
+    this.historyRail.classList.toggle("mobile-open", open);
+    this.btnMobileHistory?.classList.toggle("active", open);
+    this.btnMobileHistory?.setAttribute("aria-expanded", String(open));
+    if (open) {
+      this.setTicketPanelOpen(false);
+      this.setMobileDrawerOpen(false);
+    }
+  }
+
+  private setMobileDrawerOpen(open: boolean): void {
+    this.bottomDock.classList.toggle("mobile-drawer-open", open);
+    this.btnMobileDrawer?.classList.toggle("active", open);
+    this.btnMobileDrawer?.setAttribute("aria-expanded", String(open));
+    if (open) {
+      this.setTicketPanelOpen(false);
+      this.setMobileHistoryOpen(false);
+    }
+  }
+
+  private closeAllMobilePanels(): void {
+    this.setTicketPanelOpen(false);
+    this.setMobileHistoryOpen(false);
+    this.setMobileDrawerOpen(false);
   }
 
   private buildTicketGrid(): void {
@@ -358,6 +448,14 @@ export class BroadcastHUD {
     this.activeWinTier = this.drawSettled && evaluation ? evaluation.tier : 0;
 
     this.ticketCountBadge.textContent = `${this.pickedNums.size}/6`;
+    if (this.mobileTicketBadge) {
+      if (this.drawSettled && evaluation && evaluation.tier > 0) {
+        this.mobileTicketBadge.textContent = evaluation.label.split("（")[0];
+      } else {
+        this.mobileTicketBadge.textContent = `${this.pickedNums.size}/6`;
+      }
+    }
+    this.btnMobileTicket?.classList.toggle("has-pick", this.pickedNums.size === 6);
     for (const [num, btn] of this.ticketButtons) {
       const selected = this.pickedNums.has(num);
       btn.classList.toggle("selected", selected);
@@ -459,6 +557,9 @@ export class BroadcastHUD {
 
   private renderHistoryList(): void {
     this.historyCountBadge.textContent = `${this.historyEntries.length} 局`;
+    if (this.mobileHistoryBadge) {
+      this.mobileHistoryBadge.textContent = String(this.historyEntries.length);
+    }
     if (this.historyEntries.length === 0) {
       this.historyList.innerHTML = `<div class="history-empty">完成攪珠後自動記錄</div>`;
       return;

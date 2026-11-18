@@ -25,10 +25,11 @@ export interface StudioBuildResult {
   washerLights: PointLight[];
 }
 
-function createStudioBackdropTexture() {
+function createStudioBackdropTexture(isMobile = false) {
   const canvas = document.createElement("canvas");
-  canvas.width = 1024;
-  canvas.height = 1024;
+  const size = isMobile ? 512 : 1024;
+  canvas.width = size;
+  canvas.height = size;
   const ctx = canvas.getContext("2d")!;
 
   const w = canvas.width;
@@ -46,7 +47,8 @@ function createStudioBackdropTexture() {
   ctx.fillRect(0, 0, w, h);
 
   // Subtle architectural studio wall plaster grain & faint vertical seam lines
-  for (let i = 0; i < 1600; i++) {
+  const grainCount = isMobile ? 400 : 1600;
+  for (let i = 0; i < grainCount; i++) {
     const x = (i * 97) % w;
     const y = (i * 211) % h;
     const rad = 2 + (i % 5);
@@ -102,8 +104,8 @@ function createWashGlowTexture() {
   return canvasToDataTexture(canvas, "srgb");
 }
 
-function createStudioFloorTextures() {
-  const size = 512;
+function createStudioFloorTextures(isMobile = false) {
+  const size = isMobile ? 256 : 512;
   const colorCanvas = document.createElement("canvas");
   colorCanvas.width = size;
   colorCanvas.height = size;
@@ -122,7 +124,7 @@ function createStudioFloorTextures() {
   rCtx.fillRect(0, 0, size, size);
 
   // Subtle multi-tile micro variation & micro-sheen flecks (deterministic PRNG look)
-  const tile = 256;
+  const tile = size / 2;
   for (let ty = 0; ty < 2; ty++) {
     for (let tx = 0; tx < 2; tx++) {
       const shade = (tx + ty) % 2 === 0 ? "rgba(255,255,255,0.025)" : "rgba(0,0,0,0.025)";
@@ -137,10 +139,10 @@ function createStudioFloorTextures() {
 
   // Fine architectural studio panel seams
   cCtx.strokeStyle = "rgba(38, 35, 52, 0.36)";
-  cCtx.lineWidth = 2;
+  cCtx.lineWidth = isMobile ? 1.5 : 2;
   rCtx.strokeStyle = "rgb(145, 145, 145)";
-  rCtx.lineWidth = 2;
-  for (const offset of [0, 256]) {
+  rCtx.lineWidth = isMobile ? 1.5 : 2;
+  for (const offset of [0, tile]) {
     cCtx.beginPath();
     cCtx.moveTo(offset, 0);
     cCtx.lineTo(offset, size);
@@ -157,7 +159,8 @@ function createStudioFloorTextures() {
   }
 
   // Soft organic studio buffing grain
-  for (let i = 0; i < 420; i++) {
+  const grainCount = isMobile ? 120 : 420;
+  for (let i = 0; i < grainCount; i++) {
     const x = ((i * 73) % size);
     const y = ((i * 197) % size);
     const rad = 6 + (i % 14);
@@ -185,7 +188,7 @@ function createStudioFloorTextures() {
   return { map, roughnessMap };
 }
 
-export function createStudio(): StudioBuildResult {
+export function createStudio(isMobile = false): StudioBuildResult {
   const group = new Group();
   group.name = "broadcastStudio";
 
@@ -196,7 +199,8 @@ export function createStudio(): StudioBuildResult {
   const fullCircleArc = Math.PI * 2;
 
   // 1. Soft glossy studio floor with subtle architectural panel seams & micro-roughness
-  const { map: floorMap, roughnessMap: floorRoughMap } = createStudioFloorTextures();
+  const { map: floorMap, roughnessMap: floorRoughMap } =
+    createStudioFloorTextures(isMobile);
   const floorMat = new MeshPhysicalMaterial({
     color: 0xffffff,
     map: floorMap,
@@ -242,7 +246,7 @@ export function createStudio(): StudioBuildResult {
   group.add(podiumDisc);
 
   // 2. Full 360-Degree Concave Circular Studio Cyclorama Wall (no side walls, seamless 360 orbit!)
-  const backdropTex = createStudioBackdropTexture();
+  const backdropTex = createStudioBackdropTexture(isMobile);
   const backdropMat = new MeshStandardMaterial({
     color: 0xffffff,
     map: backdropTex,
@@ -295,7 +299,8 @@ export function createStudio(): StudioBuildResult {
   ];
 
   const signParts: MergeGeometryPart[] = [];
-  for (let q = 0; q < 4; q++) {
+  const signQuadrants = isMobile ? 1 : 4;
+  for (let q = 0; q < signQuadrants; q++) {
     const baseTheta = q * (Math.PI * 0.5);
     for (const s of baseSignPattern) {
       signParts.push({
@@ -480,7 +485,7 @@ export function createStudio(): StudioBuildResult {
   const keyLight = new DirectionalLight(0xfff8f0, 1.92);
   keyLight.position.set(3.4, 8.6, 7.8);
   keyLight.lookAt(0, 2.8, 0);
-  keyLight.castShadow = true;
+  keyLight.castShadow = !isMobile;
   group.add(keyLight);
 
   const fillLight = new DirectionalLight(0xf1f5ff, 0.95);
